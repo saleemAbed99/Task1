@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Task1.Auth;
 using Task1.Dtos;
@@ -7,6 +9,7 @@ using Task1.Models;
 
 namespace Task1.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class AuthController : ControllerBase
@@ -18,6 +21,7 @@ namespace Task1.Controllers
             _authRepo = authRepo;
         }
 
+        [AllowAnonymous]
         [HttpPost("Login")]
         public async Task<ActionResult<ServiceResponse<string>>> Login(LoginUserDto request) 
         {
@@ -28,7 +32,8 @@ namespace Task1.Controllers
 
             return Ok(response);
         }
-
+        
+        [AllowAnonymous]
         [HttpPost("Register")]
         public async Task<ActionResult<ServiceResponse<int>>> Register(RegisterUserDto user) 
         {
@@ -46,6 +51,15 @@ namespace Task1.Controllers
                 return BadRequest(response);
 
             return Ok(response);
+        }
+
+        [HttpPatch("Update")]
+        public async Task<ActionResult<ServiceResponse<GetUserDto>>> UpdateUser(JsonPatchDocument<User> userUpdates)
+        {
+            var response = await _authRepo.UpdateUser(userUpdates);
+            if(response.Success)
+                return Ok(response);
+            return BadRequest(response);
         }
     }
 }

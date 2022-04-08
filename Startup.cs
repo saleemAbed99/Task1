@@ -16,8 +16,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Filters;
 using Task1.Auth;
 using Task1.Data;
+using Task1.Services.ProfileServices;
 
 namespace Task1
 {
@@ -34,7 +36,7 @@ namespace Task1
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<DataContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Default")));
-            services.AddControllers();
+            services.AddControllers().AddNewtonsoftJson();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options => {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
@@ -50,10 +52,18 @@ namespace Task1
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Task1", Version = "v1" });
-            });
+                c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme {
+                    Description = "Standard Authorization header using the bearer schema. Example: \"bearer {token}\"",
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey,
+                    In = ParameterLocation.Header
+                });
+                c.OperationFilter<SecurityRequirementsOperationFilter>();
+            }).AddSwaggerGenNewtonsoftSupport();
 
             services.AddAutoMapper(typeof(Startup));
             services.AddScoped<IAuthRepository, AuthRepository>();
+            services.AddScoped<IProfileServices, ProfileServices>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

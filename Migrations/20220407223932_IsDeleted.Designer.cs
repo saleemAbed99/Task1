@@ -10,8 +10,8 @@ using Task1.Data;
 namespace Task1.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20220406162758_fixUser")]
-    partial class fixUser
+    [Migration("20220407223932_IsDeleted")]
+    partial class IsDeleted
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -34,16 +34,23 @@ namespace Task1.Migrations
                     b.Property<string>("Bio")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<byte[]>("Picture")
                         .HasColumnType("varbinary(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<string>("UserUsername")
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId", "UserUsername")
+                        .IsUnique()
+                        .HasFilter("[UserUsername] IS NOT NULL");
 
                     b.ToTable("Profiles");
                 });
@@ -51,9 +58,10 @@ namespace Task1.Migrations
             modelBuilder.Entity("Task1.Models.User", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .UseIdentityColumn();
+                        .HasColumnType("int");
+
+                    b.Property<string>("Username")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("DOB")
                         .HasColumnType("datetime2");
@@ -70,10 +78,7 @@ namespace Task1.Migrations
                     b.Property<byte[]>("PasswordSalt")
                         .HasColumnType("varbinary(max)");
 
-                    b.Property<string>("Username")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
+                    b.HasKey("Id", "Username");
 
                     b.ToTable("Users");
                 });
@@ -82,9 +87,7 @@ namespace Task1.Migrations
                 {
                     b.HasOne("Task1.Models.User", "User")
                         .WithOne("Profile")
-                        .HasForeignKey("Task1.Models.Profile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("Task1.Models.Profile", "UserId", "UserUsername");
 
                     b.Navigation("User");
                 });

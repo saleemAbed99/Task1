@@ -1,13 +1,17 @@
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Task1.Data;
 using Task1.Dtos;
+using Task1.Dtos.UserDtos;
 using Task1.Models;
 
 namespace Task1.Auth
@@ -17,13 +21,18 @@ namespace Task1.Auth
         private readonly DataContext _context;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly IHttpContextAccessor _httpContext;
 
-        public AuthRepository(DataContext context, IConfiguration configuration, IMapper mapper)
+        public AuthRepository(DataContext context, IConfiguration configuration, IMapper mapper, IHttpContextAccessor httpContext)
         {
             _context = context;
             _configuration = configuration;
             _mapper = mapper;
+            _httpContext = httpContext;
         }
+
+        private int GetUserID() => int.Parse(_httpContext.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
+
         public async Task<ServiceResponse<string>> Login(string username, string password)
         {
             var response = new ServiceResponse<string>();
@@ -138,6 +147,37 @@ namespace Task1.Auth
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
             return tokenHandler.WriteToken(token);
+        }
+
+        public async Task<ServiceResponse<GetUserDto>> UpdateUser(JsonPatchDocument<User> userUpdates)
+        {
+            var response = new ServiceResponse<GetUserDto>();
+            
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == GetUserID());
+
+                if(user == null)
+                {
+                    response.Success = false;
+                    response.Message = "profile not found";
+                    return response;
+                }
+
+                userUpdates.ApplyTo(user);
+
+                await _context.SaveChangesAsync();
+                
+                response.Data = _mapper.Map<GetUserDto>(user);
+            }
+            catch(Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+            }
+            
+
+            return response;
         }
     }
 }

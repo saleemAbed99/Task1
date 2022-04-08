@@ -8,5 +8,7 @@ namespace Task1.Models
         public string Bio { get; set; }
         public User User { get; set; }
         public int UserId { get; set; }
+        public string UserUsername { get; set; }
+        public bool IsDeleted { get; set; } = false;
     }
 }
